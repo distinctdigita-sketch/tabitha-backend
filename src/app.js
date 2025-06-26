@@ -5,6 +5,8 @@ const helmet = require('helmet');
 const cors = require('cors');
 const compression = require('compression');
 const path = require('path');
+const mongoSanitize = require('express-mongo-sanitize');
+const xss = require('xss-clean');
 
 const globalErrorHandler = require('./middleware/errorHandler');
 
@@ -19,6 +21,11 @@ app.set('trust proxy', 1);
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
+
+// Data sanitization against NoSQL query injection
+app.use(mongoSanitize());
+// Data sanitization against XSS
+app.use(xss());
 
 // Development logging
 if (process.env.NODE_ENV === 'development') {
