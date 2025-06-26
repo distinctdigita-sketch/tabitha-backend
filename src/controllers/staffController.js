@@ -4,67 +4,80 @@ const { validationResult } = require('express-validator');
 // Get all staff with filtering and pagination
 const getAllStaff = async (req, res, next) => {
   try {
-    // Build query
-    const queryObj = { ...req.query };
-    const excludedFields = ['page', 'sort', 'limit', 'fields', 'search'];
-    excludedFields.forEach(el => delete queryObj[el]);
+    const {
+      search,
+      department,
+      status,
+      role,
+      page = 1,
+      limit = 50,
+      sortBy = 'date_hired',
+      sortOrder = 'desc'
+    } = req.query;
 
-    // Advanced filtering
-    let queryStr = JSON.stringify(queryObj);
-    queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, match => `$${match}`);
-    let query = Staff.find(JSON.parse(queryStr));
+    // Build query object
+    let query = {};
 
-    // Text search
-    if (req.query.search) {
-      query = query.find({
-        $text: { $search: req.query.search }
-      });
+    // Search functionality
+    if (search) {
+      query.$or = [
+        { first_name: { $regex: search, $options: 'i' } },
+        { last_name: { $regex: search, $options: 'i' } },
+        { employee_id: { $regex: search, $options: 'i' } },
+        { position: { $regex: search, $options: 'i' } },
+        { department: { $regex: search, $options: 'i' } }
+      ];
     }
 
-    // Sorting
-    if (req.query.sort) {
-      const sortBy = req.query.sort.split(',').join(' ');
-      query = query.sort(sortBy);
-    } else {
-      query = query.sort('-hire_date first_name');
+    // Department filter
+    if (department) {
+      const departments = department.split(',');
+      query.department = { $in: departments };
     }
 
-    // Field limiting (exclude password)
-    if (req.query.fields) {
-      const fields = req.query.fields.split(',').join(' ');
-      query = query.select(fields);
-    } else {
-      query = query.select('-password -__v');
+    // Status filter
+    if (status) {
+      const statuses = status.split(',');
+      query.employment_status = { $in: statuses };
     }
 
-    // Pagination
-    const page = req.query.page * 1 || 1;
-    const limit = req.query.limit * 1 || 20;
-    const skip = (page - 1) * limit;
+    // Role filter
+    if (role) {
+      const roles = role.split(',');
+      query.role = { $in: roles };
+    }
 
-    query = query.skip(skip).limit(limit);
+    // Build sort object
+    const sortObj = {};
+    sortObj[sortBy] = sortOrder === 'desc' ? -1 : 1;
 
     // Execute query
-    const staff = await query.populate('created_by', 'first_name last_name');
-    
+    const staff = await Staff.find(query)
+      .select('-password') // Exclude password field
+      .populate('created_by', 'first_name last_name')
+      .populate('last_modified_by', 'first_name last_name')
+      .sort(sortObj)
+      .limit(limit * 1)
+      .skip((page - 1) * limit);
+
     // Get total count for pagination
-    const total = await Staff.countDocuments(JSON.parse(queryStr));
+    const total = await Staff.countDocuments(query);
+
+    console.log(`Found ${staff.length} staff members out of ${total} total`);
 
     res.status(200).json({
       status: 'success',
       results: staff.length,
+      data: staff,
       pagination: {
-        page,
-        limit,
+        page: Number(page),
+        limit: Number(limit),
         total,
         pages: Math.ceil(total / limit)
-      },
-      data: {
-        staff
       }
     });
   } catch (error) {
-    console.error('Get staff error:', error);
+    console.error('Get all staff error:', error);
     res.status(500).json({
       status: 'error',
       message: 'Error fetching staff records'

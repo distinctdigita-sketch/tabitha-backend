@@ -1,3 +1,4 @@
+// src/models/Staff.js - Complete Fixed Version
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
@@ -5,8 +6,8 @@ const staffSchema = new mongoose.Schema({
   // Personal Information
   employee_id: {
     type: String,
-    unique: true,
-    required: [true, 'Employee ID is required']
+    unique: true
+    // Removed required: true since it will be auto-generated
   },
   first_name: {
     type: String,
@@ -50,11 +51,12 @@ const staffSchema = new mongoose.Schema({
   marital_status: {
     type: String,
     enum: ['Single', 'Married', 'Divorced', 'Widowed'],
-    required: true
+    default: 'Single'
   },
   nin: {
     type: String,
     unique: true,
+    sparse: true, // Allow null values but enforce uniqueness when present
     trim: true,
     minlength: [11, 'NIN must be 11 digits'],
     maxlength: [11, 'NIN must be 11 digits']
@@ -78,11 +80,20 @@ const staffSchema = new mongoose.Schema({
     postal_code: String
   },
   
-  // Emergency Contact
+  // Emergency Contact - ALL REQUIRED
   emergency_contact: {
-    name: { type: String, required: true },
-    relationship: { type: String, required: true },
-    phone: { type: String, required: true },
+    name: { 
+      type: String, 
+      required: [true, 'Emergency contact name is required'] 
+    },
+    relationship: { 
+      type: String, 
+      required: [true, 'Emergency contact relationship is required'] 
+    },
+    phone: { 
+      type: String, 
+      required: [true, 'Emergency contact phone is required'] 
+    },
     address: String
   },
   
@@ -91,20 +102,42 @@ const staffSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Position is required'],
     enum: [
-      'Director', 'Assistant Director', 'Social Worker', 'Child Care Worker',
-      'Teacher', 'Nurse', 'Cook', 'Security', 'Cleaner', 'Administrator', 'System Administrator',
-      'Volunteer', 'Intern'
+      'Director', 
+      'Assistant Director', 
+      'Administrator',
+      'System Administrator',
+      'Social Worker', 
+      'Child Care Worker',
+      'Teacher', 
+      'Nurse', 
+      'Medical Officer',
+      'Cook', 
+      'Security Officer',
+      'Cleaner', 
+      'Maintenance',
+      'Volunteer', 
+      'Intern',
+      'Manager',
+      'Supervisor',
+      'Counselor',
+      'Driver'
     ]
   },
   department: {
     type: String,
     required: [true, 'Department is required'],
     enum: [
-      'Administration', 'Child Care', 'Education', 'Health Care', 
-      'Kitchen', 'Security', 'Maintenance', 'Social Services'
+      'Administration', 
+      'Child Care', 
+      'Education', 
+      'Medical', 
+      'Kitchen', 
+      'Security', 
+      'Maintenance', 
+      'Social Services'
     ]
   },
-  hire_date: {
+  date_hired: {
     type: Date,
     required: [true, 'Hire date is required'],
     default: Date.now
@@ -114,83 +147,71 @@ const staffSchema = new mongoose.Schema({
     enum: ['Active', 'On Leave', 'Suspended', 'Terminated', 'Resigned'],
     default: 'Active'
   },
+  employment_type: {
+    type: String,
+    enum: ['Full-time', 'Part-time', 'Contract', 'Volunteer'],
+    default: 'Full-time'
+  },
   salary: {
     type: Number,
-    min: [0, 'Salary cannot be negative']
+    min: [0, 'Salary cannot be negative'],
+    default: 0
   },
   
-  // Permissions and Access
+  // Permissions and Access - Fixed structure
   role: {
     type: String,
     enum: ['super_admin', 'admin', 'manager', 'staff', 'volunteer', 'read_only'],
     default: 'staff'
   },
   permissions: [{
-    module: {
-      type: String,
-      enum: ['children', 'staff', 'reports', 'settings', 'financial']
-    },
-    actions: [{
-      type: String,
-      enum: ['create', 'read', 'update', 'delete', 'export']
-    }]
+    type: String,
+    enum: [
+      'all',
+      'manage_children', 'view_children', 'update_children', 'create_children',
+      'manage_staff', 'view_staff', 'update_staff', 'create_staff',
+      'view_reports', 'create_reports', 'export_reports',
+      'manage_settings', 'view_settings'
+    ]
   }],
   
-  // Qualifications
-  education: [{
-    institution: String,
-    qualification: String,
-    year_obtained: Number,
-    field_of_study: String
-  }],
-  certifications: [{
-    name: String,
-    issuing_organization: String,
-    date_obtained: Date,
-    expiry_date: Date,
-    certificate_number: String
-  }],
-  
-  // Background Check
-  background_check: {
-    status: {
-      type: String,
-      enum: ['Pending', 'Cleared', 'Flagged', 'Expired'],
-      default: 'Pending'
-    },
-    date_conducted: Date,
-    conducted_by: String,
-    expiry_date: Date,
-    notes: String
-  },
-  
-  // Photo and Documents
-  photo: {
-    filename: String,
-    path: String,
-    uploaded_date: { type: Date, default: Date.now }
-  },
-  documents: [{
-    type: {
-      type: String,
-      enum: ['CV', 'Certificate', 'ID Copy', 'Reference Letter', 'Contract', 'Other']
-    },
-    filename: String,
-    path: String,
-    uploaded_date: { type: Date, default: Date.now }
-  }],
-  
-  // Account Settings
+  // Security and Status
   is_active: {
     type: Boolean,
     default: true
   },
+  password_must_change: {
+    type: Boolean,
+    default: true
+  },
   last_login: Date,
+  login_attempts: {
+    type: Number,
+    default: 0
+  },
+  account_locked: {
+    type: Boolean,
+    default: false
+  },
+  account_locked_until: Date,
   password_changed_at: Date,
-  password_reset_token: String,
-  password_reset_expires: Date,
   
-  // Tracking
+  // File Management
+  photo_url: String,
+  documents: [{
+    type: {
+      type: String,
+      enum: ['CV', 'Certificate', 'Contract', 'ID', 'Other']
+    },
+    name: String,
+    url: String,
+    uploaded_at: {
+      type: Date,
+      default: Date.now
+    }
+  }],
+  
+  // Audit Trail
   created_by: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Staff'
@@ -225,30 +246,50 @@ staffSchema.virtual('age').get(function() {
   return age;
 });
 
+// CRITICAL: Pre-save middleware to generate employee_id
+staffSchema.pre('save', async function(next) {
+  // Only generate employee_id for new documents that don't have one
+  if (this.isNew && !this.employee_id) {
+    try {
+      const year = new Date().getFullYear();
+      
+      // Find the highest existing employee ID for this year
+      const lastEmployee = await this.constructor.findOne({
+        employee_id: { $regex: `^THS-${year}-` }
+      }).sort({ employee_id: -1 });
+      
+      let nextNumber = 1;
+      if (lastEmployee && lastEmployee.employee_id) {
+        const lastNumber = parseInt(lastEmployee.employee_id.split('-')[2]);
+        nextNumber = lastNumber + 1;
+      }
+      
+      this.employee_id = `THS-${year}-${nextNumber.toString().padStart(3, '0')}`;
+      console.log(`Generated employee_id: ${this.employee_id}`);
+    } catch (error) {
+      console.error('Error generating employee_id:', error);
+      return next(error);
+    }
+  }
+  next();
+});
+
 // Pre-save middleware to hash password
 staffSchema.pre('save', async function(next) {
   // Only hash password if it has been modified (or is new)
   if (!this.isModified('password')) return next();
   
-  // Hash password with cost of 12
-  this.password = await bcrypt.hash(this.password, 12);
-  
-  // Set password changed timestamp
-  this.password_changed_at = Date.now() - 1000;
-  
-  next();
-});
-
-// Pre-save middleware to generate employee ID
-staffSchema.pre('save', async function(next) {
-  if (!this.employee_id) {
-    const year = new Date().getFullYear();
-    const count = await this.constructor.countDocuments({
-      employee_id: { $regex: `^EMP-${year}-` }
-    });
-    this.employee_id = `EMP-${year}-${String(count + 1).padStart(3, '0')}`;
+  try {
+    // Hash password with cost of 12
+    this.password = await bcrypt.hash(this.password, 12);
+    
+    // Set password changed timestamp
+    this.password_changed_at = new Date(Date.now() - 1000);
+    
+    next();
+  } catch (error) {
+    return next(error);
   }
-  next();
 });
 
 // Instance method to check password
@@ -259,11 +300,22 @@ staffSchema.methods.correctPassword = async function(candidatePassword, userPass
 // Instance method to check if password changed after JWT was issued
 staffSchema.methods.changedPasswordAfter = function(JWTTimestamp) {
   if (this.password_changed_at) {
-    const changedTimestamp = parseInt(this.password_changed_at.getTime() / 1000, 10);
+    const changedTimestamp = parseInt(
+      this.password_changed_at.getTime() / 1000,
+      10
+    );
     return JWTTimestamp < changedTimestamp;
   }
   return false;
 };
+
+// Create indexes
+staffSchema.index({ email: 1 });
+staffSchema.index({ employee_id: 1 });
+staffSchema.index({ nin: 1 }, { sparse: true });
+staffSchema.index({ is_active: 1 });
+staffSchema.index({ department: 1 });
+staffSchema.index({ role: 1 });
 
 // Index for text search
 staffSchema.index({ 
@@ -273,10 +325,6 @@ staffSchema.index({
   department: 'text'
 });
 
-// Index for common queries
-staffSchema.index({ employment_status: 1 });
-staffSchema.index({ role: 1 });
-staffSchema.index({ department: 1 });
-staffSchema.index({ email: 1 });
+const Staff = mongoose.model('Staff', staffSchema);
 
-module.exports = mongoose.model('Staff', staffSchema);
+module.exports = Staff;

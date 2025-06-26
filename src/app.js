@@ -84,6 +84,7 @@ app.use('/api/v1/children', require('./routes/children'));
 app.use('/api/v1/staff', require('./routes/staff'));
 app.use('/api/v1/reports', require('./routes/reports'));
 app.use('/api/v1/uploads', require('./routes/uploads'));
+app.use('/api/v1/dashboard', require('./routes/dashboard'));
 
 // Health check endpoint
 app.get('/api/v1/health', (req, res) => {
