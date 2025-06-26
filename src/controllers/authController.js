@@ -487,8 +487,11 @@ const logout = (req, res) => {
 
 const getMe = async (req, res, next) => {
   try {
-    const user = await Staff.findById(req.user.id).populate('created_by', 'first_name last_name');
-    
+    // req.user is set by the protect middleware
+    const user = await Staff.findById(req.user.id)
+      .select('-password')
+      .populate('created_by', 'first_name last_name');
+
     res.status(200).json({
       status: 'success',
       data: {
@@ -496,9 +499,10 @@ const getMe = async (req, res, next) => {
       }
     });
   } catch (error) {
+    console.error('Get me error:', error);
     res.status(500).json({
       status: 'error',
-      message: 'Error fetching user profile'
+      message: 'Error fetching user data'
     });
   }
 };

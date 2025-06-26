@@ -92,7 +92,7 @@ const staffSchema = new mongoose.Schema({
     required: [true, 'Position is required'],
     enum: [
       'Director', 'Assistant Director', 'Social Worker', 'Child Care Worker',
-      'Teacher', 'Nurse', 'Cook', 'Security', 'Cleaner', 'Administrator',
+      'Teacher', 'Nurse', 'Cook', 'Security', 'Cleaner', 'Administrator', 'System Administrator',
       'Volunteer', 'Intern'
     ]
   },
