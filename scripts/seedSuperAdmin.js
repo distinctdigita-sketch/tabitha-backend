@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 require('dotenv').config();
 
-const connectDB = require('../src/config/database').connectDB;
+const connectDB = require('../src/config/database');
 const Staff = require('../src/models/Staff');
 
 const createSuperAdmin = async () => {
@@ -51,7 +51,7 @@ const createSuperAdmin = async () => {
       salary: 0, // Not disclosed
       
       // Role and Permissions
-      role: 'superadmin',
+      role: 'super_admin',
       permissions: [
         'manage_all_users',
         'manage_all_children',
@@ -70,7 +70,14 @@ const createSuperAdmin = async () => {
       
       // Audit
       created_by: null, // System created
-      last_login: null
+      last_login: null,
+      
+      emergency_contact: {
+        name: 'Admin Name',
+        phone: '+234XXXXXXXXXX',
+        relationship: 'Self'
+      },
+      employee_id: 'EMP001'
     };
     
     const superAdmin = new Staff(superAdminData);

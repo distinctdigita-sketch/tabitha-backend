@@ -1,6 +1,6 @@
 // scripts/createUser.js - CLI tool for superadmin to create users
 const readline = require('readline');
-
+const connectDB = require('../src/config/database');
 const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout
