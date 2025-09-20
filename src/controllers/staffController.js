@@ -88,17 +88,29 @@ const getAllStaff = async (req, res, next) => {
 // Get staff member by ID
 const getStaff = async (req, res, next) => {
   try {
+    console.log(`Fetching staff with ID: ${req.params.id}`);
+    
     const staff = await Staff.findById(req.params.id)
       .select('-password')
       .populate('created_by', 'first_name last_name')
       .populate('last_modified_by', 'first_name last_name');
 
     if (!staff) {
+      console.log(`Staff not found with ID: ${req.params.id}`);
       return res.status(404).json({
         status: 'fail',
         message: 'No staff member found with that ID'
       });
     }
+
+    console.log(`Staff found: ${staff.first_name} ${staff.last_name}`);
+
+    // Disable caching for this endpoint to avoid 304 issues
+    res.set({
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    });
 
     res.status(200).json({
       status: 'success',
@@ -108,6 +120,15 @@ const getStaff = async (req, res, next) => {
     });
   } catch (error) {
     console.error('Get staff error:', error);
+    
+    // Handle invalid ObjectId
+    if (error.name === 'CastError') {
+      return res.status(400).json({
+        status: 'fail',
+        message: 'Invalid staff ID format'
+      });
+    }
+    
     res.status(500).json({
       status: 'error',
       message: 'Error fetching staff record'
