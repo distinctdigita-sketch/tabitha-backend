@@ -53,27 +53,21 @@ const createSuperAdmin = async () => {
       // Role and Permissions
       role: 'super_admin',
       permissions: [
-  {
-    module: 'children',
-    actions: ['create', 'read', 'update', 'delete', 'export']
-  },
-  {
-    module: 'staff', 
-    actions: ['create', 'read', 'update', 'delete', 'export']
-  },
-  {
-    module: 'reports',
-    actions: ['create', 'read', 'update', 'delete', 'export']
-  },
-  {
-    module: 'settings',
-    actions: ['create', 'read', 'update', 'delete', 'export']
-  },
-  {
-    module: 'financial',
-    actions: ['create', 'read', 'update', 'delete', 'export']
-  }
-],
+        'all',
+        'manage_children',
+        'view_children', 
+        'update_children',
+        'create_children',
+        'manage_staff',
+        'view_staff',
+        'update_staff', 
+        'create_staff',
+        'view_reports',
+        'create_reports',
+        'export_reports',
+        'manage_settings',
+        'view_settings'
+      ],
       
       // Security
       is_active: true,

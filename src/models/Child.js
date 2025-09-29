@@ -110,8 +110,8 @@ const childSchema = new mongoose.Schema({
   // Administrative Information
   child_id: {
     type: String,
-    unique: true,
-    required: [true, 'Child ID is required']
+    unique: true
+    // Removed required: true since it will be auto-generated
   },
   admission_date: {
     type: Date,
