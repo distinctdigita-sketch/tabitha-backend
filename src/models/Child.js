@@ -273,6 +273,39 @@ childSchema.pre('save', async function(next) {
   next();
 });
 
+childSchema.pre('save', function(next) {
+  // Ensure allergies is always an array
+  if (this.allergies && !Array.isArray(this.allergies)) {
+    this.allergies = [this.allergies];
+  }
+  
+  // Ensure medical_conditions is properly formatted
+  if (this.medical_conditions && Array.isArray(this.medical_conditions)) {
+    this.medical_conditions = this.medical_conditions.map(condition => {
+      if (typeof condition === 'string') {
+        return {
+          condition: condition,
+          diagnosed_date: new Date(),
+          current_treatment: '',
+          notes: ''
+        };
+      }
+      return condition;
+    });
+  }
+  
+  // Validate age (allow up to 21 for extended care cases)
+  if (this.date_of_birth) {
+    const age = (Date.now() - new Date(this.date_of_birth)) / (365.25 * 24 * 60 * 60 * 1000);
+    if (age < 0 || age > 21) {
+      return next(new Error('Child must be between 0 and 21 years old'));
+    }
+  }
+  
+  next();
+});
+
+
 // Index for text search
 childSchema.index({ 
   first_name: 'text', 
