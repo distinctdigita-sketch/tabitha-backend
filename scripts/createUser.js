@@ -1,6 +1,16 @@
 // scripts/createUser.js - CLI tool for superadmin to create users
+
+// FIXED: Load environment variables with correct path
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
+
 const readline = require('readline');
-const connectDB = require('../src/config/database');
+const mongoose = require('mongoose');
+
+// FIXED: Use path.join for cross-platform compatibility and correct paths
+const connectDB = require(path.join(__dirname, '../src/config/database'));
+const Staff = require(path.join(__dirname, '../src/models/Staff'));
+
 const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout
@@ -14,9 +24,18 @@ const question = (prompt) => {
 
 const createStaffAccountCLI = async () => {
   try {
-    await connectDB();
+    // FIXED: Better error handling with detailed logging
+    console.log('🔧 Initializing staff creation...');
     
-    console.log('🏥 Tabitha Home - Create Staff Account');
+    if (!process.env.MONGODB_URI) {
+      throw new Error('MONGODB_URI environment variable is not defined. Check your .env file.');
+    }
+    
+    console.log('🔌 Connecting to database...');
+    await connectDB();
+    console.log('✅ Database connected successfully!');
+    
+    console.log('\n🏥 Tabitha Home - Create Staff Account');
     console.log('=======================================\n');
     console.log('Enter the REAL information for the staff member:\n');
     
@@ -41,26 +60,52 @@ const createStaffAccountCLI = async () => {
     console.log('4. Widowed');
     const maritalChoice = await question('Choice (1-4): ');
     const maritalStatuses = ['Single', 'Married', 'Divorced', 'Widowed'];
-    staffData.marital_status = maritalStatuses[parseInt(maritalChoice) - 1];
+    staffData.marital_status = maritalStatuses[parseInt(maritalChoice) - 1] || 'Single';
     
-    staffData.position = await question('Job Title/Position: ');
-    staffData.department = await question('Department: ');
+    console.log('\nAvailable Positions:');
+    const positions = [
+      'Director', 'Assistant Director', 'Administrator', 'System Administrator',
+      'Social Worker', 'Child Care Worker', 'Teacher', 'Nurse', 'Medical Officer',
+      'Cook', 'Security Officer', 'Cleaner', 'Maintenance', 'Volunteer', 'Intern',
+      'Manager', 'Supervisor', 'Counselor', 'Driver'
+    ];
+    positions.forEach((pos, index) => console.log(`${index + 1}. ${pos}`));
+    const positionChoice = await question('Choose position (1-' + positions.length + '): ');
+    staffData.position = positions[parseInt(positionChoice) - 1] || 'Staff';
+    
+    console.log('\nAvailable Departments:');
+    const departments = [
+      'Administration', 'Child Care', 'Education', 'Medical', 
+      'Kitchen', 'Security', 'Maintenance', 'Social Services'
+    ];
+    departments.forEach((dept, index) => console.log(`${index + 1}. ${dept}`));
+    const deptChoice = await question('Choose department (1-' + departments.length + '): ');
+    staffData.department = departments[parseInt(deptChoice) - 1] || 'Administration';
     
     console.log('\nSystem Access Level:');
-    console.log('1. admin - Can manage children, staff, generate reports');
-    console.log('2. staff - Can view/edit children records, create reports');
-    console.log('3. volunteer - Can view children records, limited access');
-    console.log('4. read_only - Can only view records');
-    const roleChoice = await question('Choice (1-4): ');
+    console.log('1. super_admin - Full system access');
+    console.log('2. admin - Can manage children, staff, generate reports');
+    console.log('3. manager - Can manage team and moderate content');
+    console.log('4. staff - Can view/edit children records, create reports');
+    console.log('5. volunteer - Can view children records, limited access');
+    console.log('6. read_only - Can only view records');
+    const roleChoice = await question('Choice (1-6): ');
     
-    const roles = ['admin', 'staff', 'volunteer', 'read_only'];
-    staffData.role = roles[parseInt(roleChoice) - 1];
+    const roles = ['super_admin', 'admin', 'manager', 'staff', 'volunteer', 'read_only'];
+    staffData.role = roles[parseInt(roleChoice) - 1] || 'staff';
     
     // Optional fields
     const addOptional = await question('\nAdd optional details? (y/n): ');
     if (addOptional.toLowerCase() === 'y') {
-      staffData.nin = await question('NIN (11 digits, optional): ');
-      staffData.salary = await question('Monthly Salary (optional): ');
+      const ninInput = await question('NIN (11 digits, optional): ');
+      if (ninInput && ninInput.length === 11) {
+        staffData.nin = ninInput;
+      }
+      
+      const salaryInput = await question('Monthly Salary (optional): ');
+      if (salaryInput && !isNaN(salaryInput)) {
+        staffData.salary = parseFloat(salaryInput);
+      }
       
       console.log('\nAddress (optional):');
       const addAddress = await question('Add address? (y/n): ');
@@ -74,20 +119,30 @@ const createStaffAccountCLI = async () => {
       }
     }
     
+    // Emergency contact (required in schema)
+    console.log('\nEmergency Contact (Required):');
+    staffData.emergency_contact = {
+      name: await question('Emergency Contact Name: '),
+      relationship: await question('Relationship: '),
+      phone: await question('Emergency Contact Phone: ')
+    };
+    
     // Default values for required fields
-    staffData.date_of_birth = new Date('1990-01-01'); // Will be updated later
+    staffData.date_of_birth = new Date('1990-01-01');
     staffData.employment_type = 'Full-time';
     staffData.employment_status = 'Active';
     staffData.date_hired = new Date();
     staffData.is_active = true;
     staffData.password_must_change = true;
     
-    // Generate personalized temporary password
-    const tempPassword = generateStaffPassword(staffData.first_name, staffData.last_name);
+    // Generate temporary password
+    const tempPassword = generateRandomPassword();
     staffData.password = tempPassword;
     
     // Set role-based permissions
     staffData.permissions = getRolePermissions(staffData.role);
+    
+    console.log('\n💾 Creating staff account...');
     
     // Create staff account
     const newStaff = new Staff(staffData);
@@ -111,9 +166,26 @@ const createStaffAccountCLI = async () => {
     console.log('==========================================');
     
   } catch (error) {
-    console.error('❌ Error creating staff account:', error);
+    console.error('\n❌ Error creating staff account:', error.message);
+    console.error('📍 Full error:', error);
+    
+    if (error.code === 11000) {
+      console.error('💡 This usually means email or employee ID already exists');
+    }
+    if (error.name === 'ValidationError') {
+      console.error('💡 Please check that all required fields are filled correctly');
+    }
   } finally {
     rl.close();
+    try {
+      // FIXED: Properly close database connection
+      if (mongoose.connection.readyState === 1) {
+        await mongoose.connection.close();
+        console.log('🔌 Database connection closed');
+      }
+    } catch (closeError) {
+      console.error('⚠️ Error closing database connection:', closeError.message);
+    }
     process.exit(0);
   }
 };
@@ -129,35 +201,49 @@ const generateRandomPassword = () => {
 
 const getRolePermissions = (role) => {
   const permissions = {
+    super_admin: ['all'],
     admin: [
-      'manage_children',
-      'manage_staff',
-      'view_reports',
-      'manage_documents',
-      'export_data'
+      'manage_children', 'manage_staff', 'view_reports', 'create_reports',
+      'export_reports', 'manage_settings'
+    ],
+    manager: [
+      'manage_children', 'view_staff', 'view_reports', 'create_reports'
     ],
     staff: [
-      'view_children',
-      'edit_children',
-      'view_staff',
-      'create_reports'
+      'view_children', 'update_children', 'view_staff', 'create_reports'
     ],
     volunteer: [
-      'view_children',
-      'view_basic_reports'
+      'view_children'
     ],
     read_only: [
-      'view_children',
-      'view_reports'
+      'view_children', 'view_reports'
     ]
   };
   
   return permissions[role] || permissions.read_only;
 };
 
-// Run if called directly
+// FIXED: Better error handling for module execution
 if (require.main === module) {
-  createUserCLI();
+  // Add process handlers
+  process.on('unhandledRejection', (reason, promise) => {
+    console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+    process.exit(1);
+  });
+
+  process.on('uncaughtException', (error) => {
+    console.error('❌ Uncaught Exception:', error);
+    process.exit(1);
+  });
+
+  createStaffAccountCLI().catch((error) => {
+    console.error('❌ Script failed:', error);
+    process.exit(1);
+  });
 }
 
-module.exports = { createUserCLI, generateRandomPassword, getRolePermissions };
+module.exports = { 
+  createStaffAccountCLI, 
+  generateRandomPassword, 
+  getRolePermissions 
+};
