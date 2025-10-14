@@ -15,6 +15,8 @@ const app = express();
 // Trust proxy for rate limiting
 app.set('trust proxy', 1);
 
+app.use('/uploads', express.static('uploads'));
+
 // Global Middlewares
 
 // Set security HTTP headers
