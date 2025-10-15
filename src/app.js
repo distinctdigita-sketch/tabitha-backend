@@ -89,6 +89,11 @@ app.use('/api/v1/reports', require('./routes/reports'));
 app.use('/api/v1/uploads', require('./routes/uploads'));
 app.use('/api/v1/dashboard', require('./routes/dashboard'));
 
+
+app.get('/', (req, res) => {
+  res.send('Welcome to the Tabitha Home API 🚀');
+});
+
 // Health check endpoint
 app.get('/api/v1/health', (req, res) => {
   res.status(200).json({
