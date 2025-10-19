@@ -62,11 +62,6 @@ const corsOptions = {
       'https://tabitha-frontend-al866bbnj-damilare-israels-projects.vercel.app'
     ];
 
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
     // Allow matching host patterns for preview deployments (vercel/netlify)
     const allowedPatterns = [/\.vercel\.app$/, /\.netlify\.app$/];
 
