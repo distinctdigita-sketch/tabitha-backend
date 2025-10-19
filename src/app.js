@@ -50,17 +50,17 @@ const corsOptions = {
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
-    
+
     const allowedOrigins = [
       'http://localhost:3000',
       'http://localhost:5000',
       'http://localhost:8080',
       'https://tabitha-home.netlify.app',
       'https://tabitha-home.vercel.app',
-      'https://tabitha-frontend-rho.vercel.app/',
-      'tabitha-frontend-l2epqfeyr-damilare-israels-projects.vercel.app'
+      'tabitha-frontend-l2epqfeyr-damilare-israels-projects.vercel.app',
+      'https://tabitha-frontend-rho.vercel.app'
     ];
-    
+
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
@@ -68,10 +68,14 @@ const corsOptions = {
     }
   },
   credentials: true,
-  optionsSuccessStatus: 200
+  optionsSuccessStatus: 200,
+  methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With']
 };
 
+// Use CORS with the configured options and also handle preflight requests explicitly
 app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 
 // Compression middleware
 app.use(compression());
