@@ -56,7 +56,8 @@ const corsOptions = {
       'http://localhost:5000',
       'http://localhost:8080',
       'https://tabitha-home.netlify.app',
-      'https://tabitha-home.vercel.app'
+      'https://tabitha-home.vercel.app',
+      'https://tabitha-frontend-rho.vercel.app/'
     ];
     
     if (allowedOrigins.indexOf(origin) !== -1) {
