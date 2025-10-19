@@ -57,7 +57,8 @@ const corsOptions = {
       'http://localhost:8080',
       'https://tabitha-home.netlify.app',
       'https://tabitha-home.vercel.app',
-      'https://tabitha-frontend-rho.vercel.app/'
+      'https://tabitha-frontend-rho.vercel.app/',
+      'tabitha-frontend-l2epqfeyr-damilare-israels-projects.vercel.app'
     ];
     
     if (allowedOrigins.indexOf(origin) !== -1) {
