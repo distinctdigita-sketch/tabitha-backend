@@ -57,11 +57,23 @@ const corsOptions = {
       'http://localhost:8080',
       'https://tabitha-home.netlify.app',
       'https://tabitha-home.vercel.app',
-      'tabitha-frontend-l2epqfeyr-damilare-israels-projects.vercel.app',
-      'https://tabitha-frontend-rho.vercel.app'
+      'https://tabitha-frontend-rho.vercel.app',
+      // include the preview domain seen in your logs so deployed preview can call API
+      'https://tabitha-frontend-al866bbnj-damilare-israels-projects.vercel.app'
     ];
 
     if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+    // Allow matching host patterns for preview deployments (vercel/netlify)
+    const allowedPatterns = [/\.vercel\.app$/, /\.netlify\.app$/];
+
+    const isAllowedByList = allowedOrigins.includes(origin);
+    const isAllowedByPattern = allowedPatterns.some((p) => p.test(origin));
+
+    if (isAllowedByList || isAllowedByPattern) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
